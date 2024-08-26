@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
-import { isNotEmpty } from 'class-validator';
+import { Repository, UpdateResult } from 'typeorm';
+import { generateHash } from 'src/common/helpers';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -13,45 +13,37 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
-
-  create(createUserDto: CreateUserDto) {
-    const candidate = this.userRepository.create(createUserDto);
-    const user = this.userRepository.save(candidate);
-    return user;
-  }
-
-  async getLoginCredentials(email: string) {
-    const user = await this.userRepository.findOne({
+  
+  async getUserAuthenticationData(email: string): Promise<User> {
+    return await this.userRepository.findOne({
       where: {email},
       select: {
-        password: true,
-        isActive: true,
         id: true,
+        isActive: true,
         email: true,
+        password: true,
       }
-    })
-
-    if (!user) throw new BadRequestException();
-    
-    return user;
+    });
   }
 
-  async getRefreshTokenHash(id: string): Promise<User> {
+  async getRefreshAuthenticationData(id: string): Promise<User> {
     return await this.userRepository.findOne({
       where: {id},
       select: {
-        id: true,
         rtHash: true,
-        email: true,
+        isActive: true,
       }
-    })
+    });
   }
 
-  async updateRefreshTokenHash(id: string, payload:string) {
-    return await this.userRepository.update({id}, {rtHash: payload})
+  async updateRtHash(id: string, payload: string): Promise<void> {
+    const rtHash = await generateHash(payload);
+    await this.userRepository.update({id}, {rtHash});
+    return;
   }
 
-  async clearRefreshTokenHash(id: string) {
-    return await this.userRepository.update({id}, {rtHash: null});
+  async clearRtHash(id: string):Promise<void> {
+    await this.userRepository.update({id}, {rtHash: null});
+    return;
   }
 }

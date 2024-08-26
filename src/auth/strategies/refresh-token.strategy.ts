@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -6,16 +6,19 @@ import { JwtPayload } from '../types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        private readonly configService: ConfigService,
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: 'refresh-token-secret',
+            secretOrKey: configService.get('REFRESH_TOKEN_SECRET'),
             passReqToCallback: true,
         })
     }
@@ -35,11 +38,14 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
         });
     
         if (!user)
-            throw new UnauthorizedException('')
+            throw new UnauthorizedException()
 
         if (!user.isActive)
-            throw new UnauthorizedException('');
+            throw new ForbiddenException();
 
+        if(!user.rtHash)
+            throw new UnauthorizedException();
+        
         return {
             ...user,
             refreshToken

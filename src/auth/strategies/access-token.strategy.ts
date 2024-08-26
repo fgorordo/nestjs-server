@@ -1,20 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        private readonly configService: ConfigService,
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: 'access-token-secret',
+            secretOrKey: configService.get('ACCESS_TOKEN_SECRET'),
         })
     }
 
@@ -25,7 +27,7 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
             throw new UnauthorizedException('')
             
         if ( !user.isActive ) 
-            throw new UnauthorizedException('');
+            throw new ForbiddenException('');
 
         return user;
     }
