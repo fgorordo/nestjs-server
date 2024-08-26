@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthDto } from './dto';
 import { JwtPayload, Tokens } from './types';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from 'src/common/decorators';
+import { AccessTokenAuthGuard, GetUser, RefreshTokenAuthGuard } from 'src/common/decorators';
 import { User } from 'src/user/entities';
 
 @Controller('auth')
@@ -15,13 +15,13 @@ export class AuthController {
     return this.authService.localSignIn(dto);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @AccessTokenAuthGuard()
   @Post('logout')
   logout(@GetUser() user: User): Promise<void> {
     return this.authService.logout(user.id);
   }
 
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @RefreshTokenAuthGuard()
   @Post('refresh')
   refreshTokens(
     @GetUser() user: User,

@@ -1,5 +1,6 @@
 import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { UserRoles } from '../interfaces';
 
 @Entity('users')
 export class User {
@@ -9,10 +10,10 @@ export class User {
     @Column('text', {nullable: false, unique: true})
     email: string;
 
-    @Column('text', {nullable: false})
+    @Column('text', {nullable: false, select: false})
     password: string
 
-    @Column('text', {nullable: true})
+    @Column('text', {nullable: true, select: false})
     rtHash: string;
 
     @Column('bool',{default: true})
@@ -20,14 +21,16 @@ export class User {
 
     refreshToken?: string;
 
-    @CreateDateColumn()
+    @Column('text', {array: true, default: [UserRoles.USER]})
+    roles: UserRoles[]
+
+    @CreateDateColumn({select: false,})
     createdAt: Date;
 
-    @UpdateDateColumn()
+    @UpdateDateColumn({select: false})
     updatedAt: Date;
 
-    @DeleteDateColumn()
-
+    @DeleteDateColumn({select: false})
     deletedAt: Date;
 
     @BeforeInsert()

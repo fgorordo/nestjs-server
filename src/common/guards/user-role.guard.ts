@@ -3,6 +3,7 @@ import { CanActivate, ExecutionContext, Injectable, BadRequestException, Forbidd
 import { Observable } from 'rxjs';
 import { JwtPayload } from 'src/auth/types';
 import { META_ROLES } from '../decorators';
+import { UserRoles } from 'src/user/interfaces';
 
 @Injectable()
 export class UserRoleGuard implements CanActivate {
@@ -23,7 +24,7 @@ export class UserRoleGuard implements CanActivate {
     if ( !user ) 
       throw new BadRequestException();
     
-    for (const role of [] ) {
+    for (const role of validRoles ) {
       if ( validRoles.includes( role ) ) {
         return true;
       }

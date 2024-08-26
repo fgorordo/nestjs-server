@@ -26,9 +26,8 @@ export class AuthService {
         return;
     }
 
-    async refresh(user: User) {
-        if (!compareHash(user.refreshToken, user.rtHash))
-            throw new ForbiddenException();
+    async refresh(user: User): Promise<Tokens> {
+        this.validateRefreshToken(user.refreshToken, user.rtHash);
         const tokens = await this.generateAuthTokens(user.id, user.email);
         await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
@@ -36,11 +35,7 @@ export class AuthService {
     }
 
     private async validateCredentials(dto: AuthDto): Promise<User> {
-        const candidate = await this.userService.findByEmail(dto.email);
-
-        if (!candidate)
-            throw new BadRequestException('Invalid credentials');
-
+        const candidate = await this.userService.getLoginCredentials(dto.email);
         if(!compareHash(dto.password, candidate.password))
             throw new BadRequestException('Invalid credentials');
         
@@ -65,7 +60,11 @@ export class AuthService {
         await this.userService.updateRefreshTokenHash(userId,hash);
     }
 
-    private async validateRefreshToken(user: User, refreshToken: string) {
+    private validateRefreshToken(refreshToken: string, rtHash: string): boolean {
+        if (!compareHash(refreshToken, rtHash))
+            throw new ForbiddenException();
+
+        return true;
     }
 
 
